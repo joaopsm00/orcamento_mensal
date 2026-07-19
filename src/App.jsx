@@ -5,6 +5,33 @@ const PALETTE = ["#C79A3D", "#1D4E6B", "#3FB6C4", "#A8DEDF", "#8B6B2E", "#5B7FA6
 
 const fmt = (n) => (n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const THEMES = [
+  { id: "classico", label: "Clássico", bg: "#EFEEF3", accent: "#1F2024" },
+  { id: "verde", label: "Verde", bg: "#EAF6EE", accent: "#1B7A43" },
+  { id: "azul", label: "Azul", bg: "#EAF1FB", accent: "#1D4E8C" },
+  { id: "roxo", label: "Roxo", bg: "#F1EDFB", accent: "#5B3FA6" },
+  { id: "dourado", label: "Dourado", bg: "#FBF3E6", accent: "#9C6B15" },
+];
+
+function applyTheme(themeId) {
+  const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
+  document.documentElement.style.setProperty("--orc-bg", theme.bg);
+  document.documentElement.style.setProperty("--orc-accent", theme.accent);
+  try {
+    localStorage.setItem("salva-money-theme", themeId);
+  } catch (e) {
+    /* ignore storage errors */
+  }
+}
+
+function loadSavedTheme() {
+  try {
+    return localStorage.getItem("salva-money-theme") || "classico";
+  } catch (e) {
+    return "classico";
+  }
+}
+
 function nowData() {
   const d = new Date();
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -27,7 +54,7 @@ function colorForName(name) {
 
 const STYLES = `
   * { box-sizing: border-box; }
-  .orc-root { min-height: 100vh; background: #EFEEF3; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1F2024; padding: 16px; }
+  .orc-root { min-height: 100vh; background: var(--orc-bg, #EFEEF3); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1F2024; padding: 16px; }
   .orc-header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
   .orc-header-top { display: flex; justify-content: space-between; align-items: center; }
   .orc-title { font-size: 19px; font-weight: 600; margin: 0; }
@@ -48,7 +75,7 @@ const STYLES = `
   .orc-page { flex: 0 0 100%; min-width: 100%; scroll-snap-align: start; box-sizing: border-box; padding-right: 2px; }
   .orc-dots { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
   .orc-dot { width: 6px; height: 6px; border-radius: 50%; background: #D8D7DE; cursor: pointer; border: none; padding: 0; transition: width 0.2s ease, background 0.2s ease; }
-  .orc-dot.active { background: #1F2024; width: 16px; border-radius: 3px; }
+  .orc-dot.active { background: var(--orc-accent, #1F2024); width: 16px; border-radius: 3px; }
   .orc-hero { display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #F0F0F3; }
   .orc-hero-top { display: flex; align-items: center; gap: 8px; }
   .orc-hero-icon { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
@@ -58,10 +85,10 @@ const STYLES = `
   .orc-inner-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
   .orc-desktop-tabs { display: none; gap: 24px; margin-bottom: 14px; }
   .orc-desktop-tab-btn { border: none; background: transparent; font-size: 14px; padding-bottom: 8px; cursor: pointer; }
-  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #EFEEF3; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; }
+  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--orc-bg, #EFEEF3); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; }
   .auth-card { background: #fff; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 360px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
   .auth-input { border: 1px solid #E4E3EA; border-radius: 8px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; }
-  .auth-btn { width: 100%; border: none; background: #1F2024; color: #fff; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .auth-btn { width: 100%; border: none; background: var(--orc-accent, #1F2024); color: #fff; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
   .auth-toggle { text-align: center; margin-top: 14px; font-size: 13px; color: #9B9AA5; cursor: pointer; }
   .auth-error { color: #D65B5B; font-size: 13px; margin-bottom: 10px; }
 
@@ -159,7 +186,7 @@ function AuthScreen() {
     <div className="auth-wrap">
       <style>{STYLES}</style>
       <div className="auth-card">
-        <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Orçamento</h2>
+        <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>Salva Money</h2>
         <p style={{ margin: "0 0 20px", fontSize: 13, color: "#9B9AA5" }}>
           {mode === "login" ? "Entre na sua conta" : "Crie sua conta gratuita"}
         </p>
@@ -212,6 +239,7 @@ export default function App() {
   const [session, setSession] = useState(undefined); // undefined = carregando, null = deslogado, object = logado
 
   useEffect(() => {
+    applyTheme(loadSavedTheme());
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);
@@ -241,7 +269,7 @@ function useEntriesCRUD(userId, tipo, monthKey) {
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({ nome: "", valor: "" });
+  const [draft, setDraft] = useState({ nome: "", valor: "", data: "" });
   const [error, setError] = useState(false);
 
   async function load() {
@@ -262,23 +290,24 @@ function useEntriesCRUD(userId, tipo, monthKey) {
     setEditingId(item.id);
     setAdding(false);
     setError(false);
-    setDraft({ nome: item.nome, valor: String(item.valor) });
+    setDraft({ nome: item.nome, valor: String(item.valor), data: item.data });
   }
   function startAdd() {
     setAdding(true);
     setEditingId(null);
     setError(false);
-    setDraft({ nome: "", valor: "" });
+    setDraft({ nome: "", valor: "", data: nowData() });
   }
   function cancel() {
     setEditingId(null);
     setAdding(false);
     setError(false);
-    setDraft({ nome: "", valor: "" });
+    setDraft({ nome: "", valor: "", data: "" });
   }
 
   async function save() {
     const valorNum = parseFloat(draft.valor.toString().replace(",", "."));
+    const dataFinal = draft.data.trim() || nowData();
     if (!draft.nome.trim() || isNaN(valorNum) || valorNum <= 0) {
       setError(true);
       return;
@@ -288,7 +317,7 @@ function useEntriesCRUD(userId, tipo, monthKey) {
         user_id: userId,
         tipo,
         month_key: monthKey || null,
-        data: nowData(),
+        data: dataFinal,
         nome: draft.nome.trim(),
         valor: valorNum,
       };
@@ -297,7 +326,7 @@ function useEntriesCRUD(userId, tipo, monthKey) {
     } else if (editingId != null) {
       const { data } = await supabase
         .from("entries")
-        .update({ nome: draft.nome.trim(), valor: valorNum })
+        .update({ nome: draft.nome.trim(), valor: valorNum, data: dataFinal })
         .eq("id", editingId)
         .select()
         .single();
@@ -327,6 +356,15 @@ function Dashboard({ user }) {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const mKey = monthKeyOf(currentMonth);
+
+  const [themeId, setThemeId] = useState(loadSavedTheme());
+  const [showThemePicker, setShowThemePicker] = useState(false);
+
+  function chooseTheme(id) {
+    setThemeId(id);
+    applyTheme(id);
+    setShowThemePicker(false);
+  }
 
   function goToTab(id) {
     setTab(id);
@@ -375,7 +413,7 @@ function Dashboard({ user }) {
   const [investimentos, setInvestimentos] = useState([]);
   const [investEditingId, setInvestEditingId] = useState(null);
   const [investAdding, setInvestAdding] = useState(false);
-  const [investDraft, setInvestDraft] = useState({ categoria: "", valorInvestido: "", rentabilidade: "", periodo: "mes" });
+  const [investDraft, setInvestDraft] = useState({ categoria: "", valorInvestido: "", rentabilidade: "", periodo: "mes", data: "" });
 
   async function loadInvestimentos() {
     const { data } = await supabase.from("investimentos").select("*").eq("user_id", user.id).order("created_at");
@@ -389,7 +427,7 @@ function Dashboard({ user }) {
   function investStartAdd() {
     setInvestAdding(true);
     setInvestEditingId(null);
-    setInvestDraft({ categoria: "", valorInvestido: "", rentabilidade: "", periodo: "mes" });
+    setInvestDraft({ categoria: "", valorInvestido: "", rentabilidade: "", periodo: "mes", data: nowData() });
   }
   function investStartEdit(item) {
     setInvestEditingId(item.id);
@@ -399,16 +437,18 @@ function Dashboard({ user }) {
       valorInvestido: String(item.valor_investido),
       rentabilidade: String(item.rentabilidade),
       periodo: item.periodo || "mes",
+      data: item.data_aporte || "",
     });
   }
   function investCancel() {
     setInvestEditingId(null);
     setInvestAdding(false);
-    setInvestDraft({ categoria: "", valorInvestido: "", rentabilidade: "", periodo: "mes" });
+    setInvestDraft({ categoria: "", valorInvestido: "", rentabilidade: "", periodo: "mes", data: "" });
   }
   async function investSave() {
     const vi = parseFloat(investDraft.valorInvestido.toString().replace(",", "."));
     const rb = parseFloat(investDraft.rentabilidade.toString().replace(",", ".")) || 0;
+    const dataFinal = investDraft.data.trim() || nowData();
     if (!investDraft.categoria.trim() || isNaN(vi) || vi <= 0) return;
     if (investAdding) {
       const row = {
@@ -417,13 +457,14 @@ function Dashboard({ user }) {
         valor_investido: vi,
         rentabilidade: rb,
         periodo: investDraft.periodo,
+        data_aporte: dataFinal,
       };
       const { data } = await supabase.from("investimentos").insert(row).select().single();
       if (data) setInvestimentos((prev) => [...prev, data]);
     } else if (investEditingId != null) {
       const { data } = await supabase
         .from("investimentos")
-        .update({ categoria: investDraft.categoria.trim(), valor_investido: vi, rentabilidade: rb, periodo: investDraft.periodo })
+        .update({ categoria: investDraft.categoria.trim(), valor_investido: vi, rentabilidade: rb, periodo: investDraft.periodo, data_aporte: dataFinal })
         .eq("id", investEditingId)
         .select()
         .single();
@@ -487,9 +528,79 @@ function Dashboard({ user }) {
       <div className="orc-header">
         <div className="orc-header-top">
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <h1 className="orc-title">Orçamento</h1>
+            <h1 className="orc-title">Salva Money</h1>
           </div>
-          <button onClick={handleLogout} style={pillBtnStyle}>Sair</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+            <button
+              onClick={() => setShowThemePicker((v) => !v)}
+              style={{ ...pillBtnStyle, display: "flex", alignItems: "center", gap: 6 }}
+              aria-label="Escolher tema de cores"
+            >
+              <span
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  background: THEMES.find((t) => t.id === themeId)?.accent,
+                  display: "inline-block",
+                }}
+              />
+              Tema
+            </button>
+            <button onClick={handleLogout} style={pillBtnStyle}>Sair</button>
+
+            {showThemePicker && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 8px)",
+                  right: 0,
+                  background: "#fff",
+                  borderRadius: 12,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                  padding: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  zIndex: 10,
+                  minWidth: 150,
+                }}
+              >
+                {THEMES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => chooseTheme(t.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      border: "none",
+                      background: themeId === t.id ? "#F2F1F6" : "transparent",
+                      padding: "6px 8px",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      fontSize: 13,
+                      textAlign: "left",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: "50%",
+                        background: t.accent,
+                        border: "2px solid #fff",
+                        boxShadow: "0 0 0 1px #E4E3EA",
+                        flexShrink: 0,
+                      }}
+                    />
+                    {t.label}
+                    {themeId === t.id && <span style={{ marginLeft: "auto", color: t.accent }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div className="orc-date-pill">
           <button onClick={prevMonth} style={monthArrowStyle} aria-label="Mês anterior">‹</button>
@@ -500,7 +611,7 @@ function Dashboard({ user }) {
 
       <div className="orc-saldo-bar">
         <span>Saldo do mês</span>
-        <strong style={{ color: saldo >= 0 ? "#1F2024" : "#D65B5B" }}>{fmt(saldo)}</strong>
+        <strong style={{ color: saldo >= 0 ? "var(--orc-accent, #1F2024)" : "#D65B5B" }}>{fmt(saldo)}</strong>
       </div>
 
       <div className="orc-desktop-tabs">
@@ -517,8 +628,8 @@ function Dashboard({ user }) {
             className="orc-desktop-tab-btn"
             style={{
               fontWeight: tab === t.id ? 600 : 400,
-              color: tab === t.id ? "#1F2024" : "#9B9AA5",
-              borderBottom: tab === t.id ? "2px solid #1F2024" : "2px solid transparent",
+              color: tab === t.id ? "var(--orc-accent, #1F2024)" : "#9B9AA5",
+              borderBottom: tab === t.id ? "2px solid var(--orc-accent, #1F2024)" : "2px solid transparent",
             }}
           >
             {t.label}
@@ -706,7 +817,8 @@ function InvestmentSection({ items, editingId, adding, draft, setDraft, startAdd
         <button style={{ ...pillBtnStyle, background: "#F2F1F6" }} onClick={startAdd}>+ Adicionar</button>
       </div>
 
-      <div className="orc-row-head" style={{ gridTemplateColumns: "1fr 78px 96px 50px" }}>
+      <div className="orc-row-head" style={{ gridTemplateColumns: "46px 1fr 78px 96px 50px" }}>
+        <span>Data</span>
         <span>Categoria</span>
         <span style={{ textAlign: "right" }}>Investido</span>
         <span style={{ textAlign: "right" }}>Rentab.</span>
@@ -717,7 +829,8 @@ function InvestmentSection({ items, editingId, adding, draft, setDraft, startAdd
         editingId === d.id ? (
           <InvestEditRow key={d.id} draft={draft} setDraft={setDraft} onSave={save} onCancel={cancel} />
         ) : (
-          <div key={d.id} className="orc-row" style={{ gridTemplateColumns: "1fr 78px 96px 50px" }}>
+          <div key={d.id} className="orc-row" style={{ gridTemplateColumns: "46px 1fr 78px 96px 50px" }}>
+            <span style={{ color: "#9B9AA5" }}>{d.data_aporte}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: colors[d.categoria], display: "inline-block", flexShrink: 0 }} />
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.categoria}</span>
@@ -840,9 +953,14 @@ function EditRow({ draft, setDraft, onSave, onCancel, isNew, error }) {
   const errStyle = error ? { borderColor: "#D65B5B" } : {};
   return (
     <div className="orc-edit-row">
-      <span style={{ color: "#9B9AA5", fontSize: 12 }}>{isNew ? "novo" : "--"}</span>
       <input
-        autoFocus
+        value={draft.data}
+        onChange={(e) => setDraft({ ...draft, data: e.target.value })}
+        placeholder="DD/MM"
+        style={{ ...inputStyle, padding: "5px 4px", fontSize: 13, textAlign: "center" }}
+      />
+      <input
+        autoFocus={isNew}
         value={draft.nome}
         onChange={(e) => setDraft({ ...draft, nome: e.target.value })}
         placeholder="Nome da categoria"
@@ -867,7 +985,8 @@ function EditRow({ draft, setDraft, onSave, onCancel, isNew, error }) {
 function InvestEditRow({ draft, setDraft, onSave, onCancel, isNew }) {
   return (
     <div className="orc-edit-row" style={{ gridTemplateColumns: "1fr", display: "flex", flexWrap: "wrap", gap: 8 }}>
-      <input autoFocus value={draft.categoria} onChange={(e) => setDraft({ ...draft, categoria: e.target.value })} placeholder="Categoria (ex: Ações)" style={{ ...inputStyle, flex: "1 1 auto", minWidth: 100 }} />
+      <input value={draft.data} onChange={(e) => setDraft({ ...draft, data: e.target.value })} placeholder="DD/MM" style={{ ...inputStyle, flex: "0 1 60px", textAlign: "center" }} />
+      <input autoFocus={isNew} value={draft.categoria} onChange={(e) => setDraft({ ...draft, categoria: e.target.value })} placeholder="Categoria (ex: Ações)" style={{ ...inputStyle, flex: "1 1 auto", minWidth: 100 }} />
       <input value={draft.valorInvestido} onChange={(e) => setDraft({ ...draft, valorInvestido: e.target.value })} placeholder="0,00" inputMode="decimal" style={{ ...inputStyle, textAlign: "right", flex: "1 1 auto", minWidth: 70 }} />
       <input value={draft.rentabilidade} onChange={(e) => setDraft({ ...draft, rentabilidade: e.target.value })} placeholder="% ex: 8,5" inputMode="decimal" style={{ ...inputStyle, textAlign: "right", flex: "1 1 auto", minWidth: 70 }} onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }} />
       <select value={draft.periodo} onChange={(e) => setDraft({ ...draft, periodo: e.target.value })} style={{ ...inputStyle, flex: "1 1 auto", minWidth: 70 }}>

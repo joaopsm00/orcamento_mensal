@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: "autoUpdate",
 
       manifest: {
-        name: "Orçamento Mensal",
-        short_name: "Orçamento",
+        name: "Salva Money",
+        short_name: "Salva Money",
         description: "Controle suas finanças pessoais",
 
         theme_color: "#2563eb",

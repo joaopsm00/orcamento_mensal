@@ -23,6 +23,7 @@ create table if not exists investimentos (
   valor_investido numeric not null,
   rentabilidade numeric not null default 0,
   periodo text not null default 'mes' check (periodo in ('mes', 'ano')),
+  data_aporte text, -- formato 'DD/MM', data em que o aporte foi feito
   created_at timestamptz default now()
 );
 
@@ -61,3 +62,9 @@ create policy "usuário insere suas próprias configurações" on settings
   for insert with check (auth.uid() = user_id);
 create policy "usuário atualiza suas próprias configurações" on settings
   for update using (auth.uid() = user_id);
+
+-- ========================================================
+-- MIGRAÇÃO — se sua tabela "investimentos" já existia antes
+-- (rode só esse bloco no SQL Editor, o resto acima já está criado)
+-- ========================================================
+alter table investimentos add column if not exists data_aporte text;
