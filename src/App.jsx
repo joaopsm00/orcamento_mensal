@@ -1,22 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Routes, Route } from "react-router-dom";
 import { supabase } from "./supabaseClient";
+import Welcome from "./pages/Welcome.jsx";
 
 const PALETTE = ["#C79A3D", "#1D4E6B", "#3FB6C4", "#A8DEDF", "#8B6B2E", "#5B7FA6", "#9B6B9E", "#6B9E7A"];
 
 const fmt = (n) => (n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const THEMES = [
-  { id: "classico", label: "Clássico", bg: "#EFEEF3", accent: "#1F2024" },
-  { id: "verde", label: "Verde", bg: "#EAF6EE", accent: "#1B7A43" },
-  { id: "azul", label: "Azul", bg: "#EAF1FB", accent: "#1D4E8C" },
-  { id: "roxo", label: "Roxo", bg: "#F1EDFB", accent: "#5B3FA6" },
-  { id: "dourado", label: "Dourado", bg: "#FBF3E6", accent: "#9C6B15" },
+  { id: "classico", label: "Clássico", bg: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)", accent: "#0f172a", card: "rgba(255,255,255,0.97)", muted: "#6b7280" },
+  { id: "verde", label: "Verde", bg: "linear-gradient(135deg, #052e16 0%, #166534 100%)", accent: "#4ade80", card: "rgba(255,255,255,0.96)", muted: "#4b5563" },
+  { id: "azul", label: "Azul", bg: "linear-gradient(135deg, #172554 0%, #2563eb 100%)", accent: "#38bdf8", card: "rgba(255,255,255,0.97)", muted: "#475569" },
+  { id: "roxo", label: "Roxo", bg: "linear-gradient(135deg, #2e1065 0%, #7c3aed 100%)", accent: "#c084fc", card: "rgba(255,255,255,0.97)", muted: "#6b7280" },
+  { id: "dourado", label: "Dourado", bg: "linear-gradient(135deg, #451a03 0%, #b45309 100%)", accent: "#fbbf24", card: "rgba(255,255,255,0.97)", muted: "#6b7280" },
 ];
 
 function applyTheme(themeId) {
   const theme = THEMES.find((t) => t.id === themeId) || THEMES[0];
   document.documentElement.style.setProperty("--orc-bg", theme.bg);
   document.documentElement.style.setProperty("--orc-accent", theme.accent);
+  document.documentElement.style.setProperty("--orc-card", theme.card || "rgba(255,255,255,0.97)");
+  document.documentElement.style.setProperty("--orc-muted", theme.muted || "#6b7280");
   try {
     localStorage.setItem("salva-money-theme", themeId);
   } catch (e) {
@@ -54,18 +58,18 @@ function colorForName(name) {
 
 const STYLES = `
   * { box-sizing: border-box; }
-  .orc-root { min-height: 100vh; background: var(--orc-bg, #EFEEF3); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1F2024; padding: 16px; }
+  .orc-root { min-height: 100vh; background: var(--orc-bg, linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111827; padding: 16px; }
   .orc-header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
   .orc-header-top { display: flex; justify-content: space-between; align-items: center; }
-  .orc-title { font-size: 19px; font-weight: 600; margin: 0; }
-  .orc-date-pill { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 10px; padding: 8px 14px; font-size: 13px; color: #4A4A55; box-shadow: 0 1px 2px rgba(0,0,0,0.04); align-self: flex-start; }
-  .orc-saldo-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 12px; padding: 10px 16px; margin-bottom: 12px; font-size: 13px; color: #4A4A55; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-  .orc-card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .orc-title { font-size: 19px; font-weight: 700; margin: 0; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.16); }
+  .orc-date-pill { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.94); border: 1px solid rgba(255,255,255,0.35); border-radius: 999px; padding: 8px 14px; font-size: 13px; color: #374151; box-shadow: 0 10px 24px rgba(15,23,42,0.14); align-self: flex-start; }
+  .orc-saldo-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.94); border: 1px solid rgba(255,255,255,0.35); border-radius: 16px; padding: 12px 16px; margin-bottom: 12px; font-size: 13px; color: #4b5563; box-shadow: 0 12px 28px rgba(15,23,42,0.12); }
+  .orc-card { background: var(--orc-card, rgba(255,255,255,0.97)); border: 1px solid rgba(255,255,255,0.45); border-radius: 20px; padding: 16px; box-shadow: 0 14px 32px rgba(15,23,42,0.12); }
   .orc-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
-  .orc-card-title { font-weight: 600; font-size: 14px; }
-  .orc-row-head { display: grid; grid-template-columns: 46px 1fr 78px 72px; font-size: 11px; color: #9B9AA5; padding: 6px 2px; }
-  .orc-row { display: grid; grid-template-columns: 46px 1fr 78px 72px; align-items: center; padding: 10px 2px; border-top: 1px solid #F0F0F3; font-size: 12.5px; gap: 4px; }
-  .orc-edit-row { display: grid; grid-template-columns: 46px 1fr 78px 72px; align-items: center; gap: 8px; padding: 10px 2px; border-top: 1px solid #F0F0F3; background: #FAFAFC; }
+  .orc-card-title { font-weight: 700; font-size: 14px; color: #111827; }
+  .orc-row-head { display: grid; grid-template-columns: 46px 1fr 78px 72px; font-size: 11px; color: #6b7280; padding: 6px 2px; }
+  .orc-row { display: grid; grid-template-columns: 46px 1fr 78px 72px; align-items: center; padding: 10px 2px; border-top: 1px solid #e5e7eb; font-size: 12.5px; gap: 4px; }
+  .orc-edit-row { display: grid; grid-template-columns: 46px 1fr 78px 72px; align-items: center; gap: 8px; padding: 10px 2px; border-top: 1px solid #e5e7eb; background: #f8fafc; }
   .orc-donut-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .orc-legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 14px; width: 100%; }
   .orc-footer-total { display: flex; justify-content: flex-end; padding-top: 10px; font-weight: 600; font-size: 13px; }
@@ -85,12 +89,12 @@ const STYLES = `
   .orc-inner-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
   .orc-desktop-tabs { display: none; gap: 24px; margin-bottom: 14px; }
   .orc-desktop-tab-btn { border: none; background: transparent; font-size: 14px; padding-bottom: 8px; cursor: pointer; }
-  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--orc-bg, #EFEEF3); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; }
-  .auth-card { background: #fff; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 360px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-  .auth-input { border: 1px solid #E4E3EA; border-radius: 8px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; }
-  .auth-btn { width: 100%; border: none; background: var(--orc-accent, #1F2024); color: #fff; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
-  .auth-toggle { text-align: center; margin-top: 14px; font-size: 13px; color: #9B9AA5; cursor: pointer; }
-  .auth-error { color: #D65B5B; font-size: 13px; margin-bottom: 10px; }
+  .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--orc-bg, linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 16px; }
+  .auth-card { background: rgba(255,255,255,0.97); border: 1px solid rgba(255,255,255,0.45); border-radius: 24px; padding: 28px 24px; width: 100%; max-width: 360px; box-shadow: 0 20px 45px rgba(15,23,42,0.2); }
+  .auth-input { border: 1px solid #d1d5db; border-radius: 12px; padding: 12px; font-size: 16px; width: 100%; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; background: #fff; }
+  .auth-btn { width: 100%; border: none; background: var(--orc-accent, #22c55e); color: #fff; padding: 12px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 8px 18px rgba(34, 197, 94, 0.22); }
+  .auth-toggle { text-align: center; margin-top: 14px; font-size: 13px; color: #6b7280; cursor: pointer; }
+  .auth-error { color: #dc2626; font-size: 13px; margin-bottom: 10px; }
 
   @media (min-width: 860px) {
     .orc-root { padding: 28px 40px; }
@@ -105,43 +109,46 @@ const STYLES = `
 `;
 
 const inputStyle = {
-  border: "1px solid #E4E3EA",
-  borderRadius: 6,
+  border: "1px solid #d1d5db",
+  borderRadius: 12,
   padding: "5px 8px",
   fontSize: 16,
   outline: "none",
   fontFamily: "inherit",
   width: "100%",
   boxSizing: "border-box",
+  background: "#fff",
 };
 
 const pillBtnStyle = {
-  border: "none",
-  background: "#F7F7FA",
-  color: "#4A4A55",
+  border: "1px solid #e5e7eb",
+  background: "#f8fafc",
+  color: "#374151",
   fontSize: 12,
   padding: "7px 12px",
-  borderRadius: 8,
+  borderRadius: 999,
   cursor: "pointer",
   whiteSpace: "nowrap",
+  boxShadow: "0 6px 14px rgba(15,23,42,0.06)",
 };
 
 const iconBtnStyle = {
   border: "none",
-  background: "transparent",
-  color: "#C9C8D1",
+  background: "#f8fafc",
+  color: "#6b7280",
   fontSize: 14,
   cursor: "pointer",
   padding: "8px",
   lineHeight: 1,
   minWidth: 32,
   minHeight: 32,
+  borderRadius: 10,
 };
 
 const monthArrowStyle = {
   border: "none",
   background: "transparent",
-  color: "#B7B6C0",
+  color: "var(--orc-accent, #22c55e)",
   cursor: "pointer",
   fontSize: 15,
   padding: "4px 6px",
@@ -168,10 +175,17 @@ function AuthScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(traduzErro(error.message));
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setError(traduzErro(error.message));
-      else setInfo("Conta criada! Verifique seu e-mail para confirmar (se a confirmação estiver ativada no seu projeto).");
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/welcome`
     }
+  });
+
+  if (error) setError(traduzErro(error.message));
+  else setInfo("Conta criada com sucesso!\nVerifique seu email.");
+}
     setLoading(false);
   }
 
@@ -256,9 +270,12 @@ export default function App() {
     );
   }
 
-  if (!session) return <AuthScreen />;
-
-  return <Dashboard user={session.user} />;
+  return (
+    <Routes>
+      <Route path="/welcome" element={<Welcome />} />
+      <Route path="*" element={session ? <Dashboard user={session.user} /> : <AuthScreen />} />
+    </Routes>
+  );
 }
 
 // ============================================================
@@ -526,14 +543,15 @@ function Dashboard({ user }) {
       <style>{STYLES}</style>
 
       <div className="orc-header">
-        <div className="orc-header-top">
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
             <h1 className="orc-title">Salva Money</h1>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative" }}>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 10, position: "relative", flexWrap: "wrap", justifyContent: "flex-end", marginLeft: "auto" }}>
             <button
               onClick={() => setShowThemePicker((v) => !v)}
-              style={{ ...pillBtnStyle, display: "flex", alignItems: "center", gap: 6 }}
+              style={{ ...pillBtnStyle, display: "flex", alignItems: "center", gap: 8, padding: "8px 12px" }}
               aria-label="Escolher tema de cores"
             >
               <span
@@ -547,7 +565,7 @@ function Dashboard({ user }) {
               />
               Tema
             </button>
-            <button onClick={handleLogout} style={pillBtnStyle}>Sair</button>
+            <button onClick={handleLogout} style={{ ...pillBtnStyle, padding: "8px 12px" }}>Sair</button>
 
             {showThemePicker && (
               <div
@@ -602,10 +620,13 @@ function Dashboard({ user }) {
             )}
           </div>
         </div>
-        <div className="orc-date-pill">
-          <button onClick={prevMonth} style={monthArrowStyle} aria-label="Mês anterior">‹</button>
-          {formatMonthLabel(currentMonth)}
-          <button onClick={nextMonth} style={monthArrowStyle} aria-label="Próximo mês">›</button>
+
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+          <div className="orc-date-pill">
+            <button onClick={prevMonth} style={monthArrowStyle} aria-label="Mês anterior">‹</button>
+            {formatMonthLabel(currentMonth)}
+            <button onClick={nextMonth} style={monthArrowStyle} aria-label="Próximo mês">›</button>
+          </div>
         </div>
       </div>
 
